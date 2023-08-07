@@ -1,0 +1,60 @@
+version: "3"
+
+services:
+  server:
+    container_name: prakticum-server
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+      args:
+        SERVER_PORT: ${SERVER_PORT}
+    restart: always
+    ports:
+      - "${SERVER_PORT}:${SERVER_PORT}"
+    environment:
+      - SERVER_PORT=${SERVER_PORT}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    depends_on:
+      - postgres
+    networks:
+      - awesome
+
+  postgres:
+    image: postgres:15
+    restart: always
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - ./tmp/pgdata:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    networks:
+      - awesome
+
+  nginx:
+    container_name: prakticum-nginx
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
+      args:
+          DOMAIN: ${DOMAIN}
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - server
+    environment:
+      - DOMAIN=${DOMAIN}
+    networks:
+      - awesome
+
+networks:
+  awesome:
+    driver: bridge
